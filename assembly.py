@@ -2,7 +2,10 @@ import glob, os, shutil, sys
 import subprocess
 import multiprocessing
 
-def run_flye(seqfile,gsize): #run flye assembler and move the result folder to <seqfile>_outdir
+##TODO check what happen if seqfile is not in the same location of cmd eg seqfile = ./test/final/mushroom/oxford.fasta
+##TODO maybe convert ALL relpath to os.getcwd for more compatibility?
+
+def run_flye(seqfile,gsize): #run flye assembler and move the result folder to <seqfile>_outdir on the corrected reads from canu
 	if os.path.exists('flye_out'):
 		shutil.rmtree('flye_out')
 	path=os.getcwd()
@@ -14,15 +17,15 @@ def run_flye(seqfile,gsize): #run flye assembler and move the result folder to <
 	shutil.move(path+'/flye_out',path+'/'+seqfile+'_outdir')
 	
 def run_canu(seqfile,gsize): #run canu assembler and move the result folder to <seqfile>_outdir
-	subprocess.run(["canu",  #Generate corrected reads
+	subprocess.run(["canu",  
 		"-correct",
 		"-p",seqfile,
 		"-d","corrected_canu",
 		"genomeSize="+gsize,
 		"-nanopore",
-		seqfile]
+		seqfile]				#Correct the raw data, output corrected reads to <seqfile>.correctedReads.fasta.gz
 	)
-	subprocess.run(["mv","./corrected_canu/"+seqfile+".correctedReads.fasta.gz","./"])
+	subprocess.run(["mv","./corrected_canu/"+seqfile+".correctedReads.fasta.gz","./"]) #move it to working directory
 	if os.path.exists('corrected_canu'):
 		shutil.rmtree('corrected_canu')
 	if os.path.exists('canu_out'):
@@ -65,7 +68,7 @@ def run_busco(seqfile,lineage):  #parallelize busco
 	p1.join()
 	p2.join()
 
-def assemble_genome(seqfile,gsize):
+def assemble_genome(seqfile,gsize): #check existing output folder and ask if we can clear it. ##TODO maybe implement custom output folder?
 	outdir=(f"{seqfile}_outdir")
 	path=os.getcwd()
 	try:
@@ -89,15 +92,15 @@ def assemble_genome(seqfile,gsize):
 		return
 	
 def busco_result(seqfile,lineage):
-#Parse the result file from busco using input of kingdom type then return total complete busco
+#Parse the result file from busco then return total complete busco
 	canupath=os.path.relpath(seqfile+"_outdir/busco_out_canu/short_summary.specific."+lineage+"_odb10.busco_out_canu.txt")
 	flyepath=os.path.relpath(seqfile+"_outdir/busco_out_flye/short_summary.specific."+lineage+"_odb10.busco_out_flye.txt")
 	with open(canupath,"r") as file:
 		lines=file.readlines()
-		canu_score=lines[8].split('%')[0].split(':')[1] #extract the total complete score 
+		canu_score=float(lines[8].split('%')[0].split(':')[1]) #extract the total complete score as float
 	with open(flyepath,"r") as file:
 		lines=file.readlines()
-		flye_score=lines[8].split('%')[0].split(':')[1]
+		flye_score=float(lines[8].split('%')[0].split(':')[1])
 	if canu_score>flye_score:
 		return 'canu'
 	elif canu_score<flye_score:
