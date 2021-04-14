@@ -9,23 +9,31 @@ def run_flye(seqfile,gsize): #run flye assembler and move the result folder to <
 	if os.path.exists('flye_out'):
 		shutil.rmtree('flye_out')
 	path=os.getcwd()
-	thread=str(multiprocessing.cpu_count())
+	thread=str(multiprocessing.cpu_count()) #get multiple cores to run
 	seqcorr=seqfile+".correctedReads.fasta.gz"
 	print(f"Running flye on {seqcorr}, output to assembly.fasta in dir canu_out")
-	command=["flye","--nano-corr",seqcorr,"-o","flye_out","-g",gsize,"-t",thread]
+	command=["flye",
+			"--nano-corr",seqcorr,
+			"-o","flye_out",
+			"-g",gsize,
+			"-t",thread]
 	subprocess.run(command)
 	shutil.move(path+'/flye_out',path+'/'+seqfile+'_outdir')
 	
 def run_canu(seqfile,gsize): #run canu assembler and move the result folder to <seqfile>_outdir
-	subprocess.run(["canu",  
+	subprocess.run(["canu",
 		"-correct",
 		"-p",seqfile,
-		"-d","corrected_canu",
+		"-d","corrected_canu", ##output to corrected_canu/ dir because canu can output other files not just the corrected reads, this is cleaner
 		"genomeSize="+gsize,
 		"-nanopore",
 		seqfile]				#Correct the raw data, output corrected reads to <seqfile>.correctedReads.fasta.gz
 	)
-	subprocess.run(["mv","./corrected_canu/"+seqfile+".correctedReads.fasta.gz","./"]) #move it to working directory
+	
+	subprocess.run(["mv",
+					"./corrected_canu/"+seqfile+".correctedReads.fasta.gz",
+					"./"]) #move it to working directory
+	
 	if os.path.exists('corrected_canu'):
 		shutil.rmtree('corrected_canu')
 	if os.path.exists('canu_out'):
@@ -33,8 +41,13 @@ def run_canu(seqfile,gsize): #run canu assembler and move the result folder to <
 	path=os.getcwd()
 	seqcorr=seqfile+".correctedReads.fasta.gz"
 	print(f"Running canu on {seqcorr}, output to {seqfile}.contigs.fasta in dir canu_out")
-	command=["canu","-p",seqfile,"-d","canu_out","genomeSize="+gsize,"-nanopore","-corrected",seqcorr]
-	subprocess.run(["canu","-p",seqfile,"-d","canu_out","genomeSize="+gsize,"-nanopore","-corrected",seqcorr])
+	#command=["canu","-p",seqfile,"-d","canu_out","genomeSize="+gsize,"-nanopore","-corrected",seqcorr]
+	subprocess.run(["canu",
+					"-p",seqfile,
+					"-d","canu_out",
+					"genomeSize="+gsize,
+					"-nanopore","-corrected",seqcorr]
+	)
 	shutil.move(path+'/canu_out',path+'/'+seqfile+'_outdir')
 	
 def run_busco_canu(seqfile,lineage): #run busco and move result to <seqfile>_outdir
@@ -42,9 +55,9 @@ def run_busco_canu(seqfile,lineage): #run busco and move result to <seqfile>_out
 	if os.path.exists('busco_out_canu'):
 		shutil.rmtree('busco_out_canu')
 	subprocess.run(["busco",  #busco on canu
-		"-i","./"+seqfile+"_outdir/"+"canu_out/"+seqfile+".contigs.fasta",
-		"-o","busco_out_canu","-m","genome",
-		"-l",lineage+"_odb10"]
+					"-i","./"+seqfile+"_outdir/"+"canu_out/"+seqfile+".contigs.fasta",
+					"-o","busco_out_canu","-m","genome",
+					"-l",lineage+"_odb10"]
 	)
 	shutil.move(path+'/busco_out_canu',path+'/'+seqfile+'_outdir')
 	
@@ -79,7 +92,7 @@ def assemble_genome(seqfile,gsize): #check existing output folder and ask if we 
 		if val == 'y':
 			shutil.rmtree(outdir)
 			os.mkdir(outdir)
-			run_canu(seqfile,gsize)
+			run_canu(seqfile,gsize) #run canu first for the corrected reads
 			run_flye(seqfile,gsize)
 		elif val == 'n':
 			sys.exit('Exiting')

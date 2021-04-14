@@ -24,9 +24,9 @@ def main():
 	parser.add_argument("-l",
 						type=str,
 						required=True,
-						choices=['bacteria','eukaryota','archaea'],
+						choices=['bacteria','eukaryota','archaea','fungi'],
 						metavar="<Lineage e.g: bacteria, eukaryota, archea>",
-						help="Kingdom, acceptable input: archaea, bacteria, eukaryota"
+						help="Kingdom, acceptable input: archaea, bacteria, eukaryota, fungi"
 						)
 	args = parser.parse_args()
 	
@@ -46,5 +46,7 @@ def main():
 	)
 
 	print(f"Choosing result from {compare} assembler")
+
+
 if __name__ == "__main__": #script is being executed, not imported
 	main()
