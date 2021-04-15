@@ -11,7 +11,7 @@ def run_flye(seqfile,gsize): #run flye assembler and move the result folder to <
 	path=os.getcwd()
 	thread=str(multiprocessing.cpu_count()) #get multiple cores to run
 	seqcorr=seqfile+".correctedReads.fasta.gz"
-	print(f"Running flye on {seqcorr}, output to assembly.fasta in dir canu_out")
+	print(f"Running flye on {seqcorr}, output to assembly.fasta in dir flye_out")
 	command=["flye",
 			"--nano-corr",seqcorr,
 			"-o","flye_out",
@@ -72,14 +72,30 @@ def run_busco_flye(seqfile,lineage): #run busco and move result to <seqfile>_out
 	)
 	shutil.move(path+'/busco_out_flye',path+'/'+seqfile+'_outdir')
 	
+def download_db(lineage):
+	if lineage=="archaea": ##Database mispelled archaea as archea so have to do separate
+		subprocess.run(["wget","https://www.orthodb.org/v9.1/download/odb9v1_archea_fasta.tar.gz"])
+		subprocess.run(["tar","-xzf","odb9v1_archea_fasta.tar.gz"])
+		subprocess.run(["cat","archea/Rawdata/*>"+lineage+"_proteins.fasta"])
+		subprocess.run(["rm","./odb9v1_archea_fasta.tar.gz"])
+		shutil.rmtree('archea')
+	else:
+		subprocess.run(["wget","https://v100.orthodb.org/download/odb10_"+lineage+"_fasta.tar.gz"])
+		subprocess.run(["tar","-xzvf","odb10_"+lineage+"fasta.tar.gz"])
+		subprocess.run(["cat",lineage+"/Rawdata/*>"+lineage+"_proteins.fasta"])
+		subprocess.run(["rm","-r","odb10_"+lineage+"fasta.tar.gz"])
+		shutil.rmtree(lineage)
+	
 def run_busco(seqfile,lineage):  #parallelize busco
 	p1= multiprocessing.Process(target=run_busco_canu, args=(seqfile,lineage, ))
 	p2= multiprocessing.Process(target=run_busco_flye, args=(seqfile,lineage, ))
-	
+	p3= multiprocessing.Process(target=download_db, args=(lineage, ))
 	p1.start()
 	p2.start()
+	p3.start()
 	p1.join()
 	p2.join()
+	p3.join()
 
 def assemble_genome(seqfile,gsize): #check existing output folder and ask if we can clear it. ##TODO maybe implement custom output folder?
 	outdir=(f"{seqfile}_outdir")
@@ -120,3 +136,11 @@ def busco_result(seqfile,lineage):
 		return 'flye'
 	else:
 		return 'flye'
+		
+def run_prothint(compare,lineage):
+	if compare=="canu":
+		subprocess.run(["prothint.py",  #busco on flye
+		"-i","./"+seqfile+"_outdir/"+"flye_out/assembly.fasta",
+		"-o","busco_out_flye","-m","genome",
+		"-l",lineage+"_odb10"]
+	)

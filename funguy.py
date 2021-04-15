@@ -24,9 +24,9 @@ def main():
 	parser.add_argument("-l",
 						type=str,
 						required=True,
-						choices=['bacteria','eukaryota','archaea','fungi'],
-						metavar="<Lineage e.g: bacteria, eukaryota, archea>",
-						help="Kingdom, acceptable input: archaea, bacteria, eukaryota, fungi"
+						choices=['bacteria','archaea','fungi'],
+						metavar="<Lineage e.g: bacteria, archaea>",
+						help="Kingdom, acceptable input: archaea, bacteria, fungi"
 						)
 	args = parser.parse_args()
 	
