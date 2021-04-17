@@ -5,7 +5,10 @@ import sys
 import argparse
 import subprocess
 import assembly
+import annotate
+import multiprocessing
 
+thread=str(multiprocessing.cpu_count())
 
 def main():
 	parser = argparse.ArgumentParser(description="Assembles and annotates genome given a set of proteins.")
@@ -28,11 +31,18 @@ def main():
 						metavar="<Lineage e.g: bacteria, archaea>",
 						help="Kingdom, acceptable input: archaea, bacteria, fungi"
 						)
+	parser.add_argument("-db",
+						type=str,
+						required=True,
+						metavar="<Swissprot database in fasta>",
+						help="Protein fasta to be used in blast and annotation"
+						)
 	args = parser.parse_args()
 	
 	assembly.assemble_genome(
 		args.s,
-		args.gs
+		args.gs,
+		thread
 	)
 	
 	assembly.run_busco(
@@ -45,8 +55,15 @@ def main():
 		args.l
 	)
 
-	print(f"Choosing result from {compare} assembler")
-
+	with open("Assembly_chosen.txt","w") as file:
+		file.write("Choosing assembly from "+compare)
+	
+	assembly.repeatmask(thread)
+	
+	assembly.run_braker(args.l,thread)
+	
+	annotate.annotate_proteins(args.db,thread)
+	annotate.cleanup(args.s)
 
 if __name__ == "__main__": #script is being executed, not imported
 	main()
