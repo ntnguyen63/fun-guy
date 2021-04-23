@@ -61,7 +61,7 @@ def seq_lookup_table(fasta_file):  #Extract name and sequence from fasta, ie pre
 		lookup_table[record.id] = record.seq
 	return lookup_table
 
-def go_through(blast_record):  #Take the first blast match which is supposed to best and extract the protein description from title, separated by OS and a space " "
+def go_through(blast_record):  #Take the blast match and extract the protein description from title, separated by OS and a space " "
 
 	prot_functions = []
 	for alignment in blast_record.alignments:
@@ -71,7 +71,7 @@ def go_through(blast_record):  #Take the first blast match which is supposed to 
 		prot_functions.append(prot_function) #list of lists, each piece is a list of all proteins functions matched with one query
 	return prot_functions
 
-def hits_from_blast_results(result_file): #
+def hits_from_blast_results(result_file): #attach the function into the protein name from the predicted protein list
 
 	with open(result_file) as blast_file:
 		blast_records = NCBIXML.parse(blast_file)
